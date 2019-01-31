@@ -11,7 +11,10 @@ function getStrategy() {
                     target: 'http://localhost:7004',
                 };
             }
-        }
+        },
+        // machine: {
+        //     target: '',
+        // },
     }, {
         type: 'KEY_MATCH',
         key: 'cookies._clinic_id',
