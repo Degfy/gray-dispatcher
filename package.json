@@ -1,0 +1,13 @@
+{
+    "name": "dispatcher",
+    "version": "1.0.0",
+    "main": "dispatcher.js",
+    "nodeAgent": {
+        "main": "server.js"
+    },
+    "dependencies": {
+        "http-proxy": "^1.17.0",
+        "is-type-of": "^1.2.1"
+    },
+    "devDependencies": {}
+}
