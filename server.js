@@ -1,16 +1,10 @@
 const http = require('http');
 const Dispatcher = require('./dispatcher');
 
-// const searcher = require('abc-ip2region').create();
-
-// const res = searcher.btreeSearchSync('180.97.33.107');
-// console.log(res);
-// process.exit();
-
 function getStrategy() {
     return [{
         type: 'REGION',
-        region: '本地',
+        region: '内网',
         machine: {
             target: 'http://localhost:7001',
             ws: true,
