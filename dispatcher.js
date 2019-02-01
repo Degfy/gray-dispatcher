@@ -79,11 +79,14 @@ function matchMachine(req, strategies) {
                 if (is.string(region)) {
                     region = [region];
                 }
-
-                const ip = req.ip.replace(/^::ffff:/, '');
-                const rst = ip2region.memorySearchSync(ip);
-                if (rst && rst.region.match(new RegExp(region.join('|')))) {
-                    return machine;
+                try {
+                    const ip = req.ip.replace(/^::ffff:/, '');
+                    const rst = ip2region.memorySearchSync(ip);
+                    if (rst && rst.region.match(new RegExp(region.join('|')))) {
+                        return machine;
+                    }
+                } catch (e) {
+                    return;
                 }
             }
         },
@@ -175,7 +178,7 @@ function Dispatcher(defaultMachine, getStrategy, { isAsync = false, proxy = true
         function errorHandle(err) {
             console.error(err);
             // todo
-            res.end('error in server');
+            res.end('error in server when proxy');
         }
 
         if (isAsync) {
