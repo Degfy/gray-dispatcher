@@ -166,6 +166,13 @@ function Dispatcher(defaultMachine, getStrategy, { isAsync = false, proxy = true
                 return this[IP];
             },
         });
+
+        // 将ip地址加入到代理
+        const ips = [...req.ips];
+        if (req.socket.remoteAddress) {
+            ips.push(req.socket.remoteAddress);
+        }
+        req.headers['x-forwarded-for'] = ips.join(',');
     }
 
     function web(req, res) {
