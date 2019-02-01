@@ -2,6 +2,10 @@
 # yarn lockfile v1
 
 
+abc-ip2region@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.npmjs.org/abc-ip2region/-/abc-ip2region-0.0.1.tgz#a3c0c38af801b755de95c37e5cea312e345b5081"
+
 cookies@^0.7.3:
   version "0.7.3"
   resolved "https://registry.yarnpkg.com/cookies/-/cookies-0.7.3.tgz#7912ce21fbf2e8c2da70cf1c3f351aecf59dadfa"

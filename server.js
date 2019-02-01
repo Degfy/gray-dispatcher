@@ -1,8 +1,21 @@
 const http = require('http');
 const Dispatcher = require('./dispatcher');
 
+// const searcher = require('abc-ip2region').create();
+
+// const res = searcher.btreeSearchSync('180.97.33.107');
+// console.log(res);
+// process.exit();
+
 function getStrategy() {
     return [{
+        type: 'REGION',
+        region: '本地',
+        machine: {
+            target: 'http://localhost:7001',
+            ws: true,
+        },
+    }, {
         type: Dispatcher.DISPATCHERTYPE.FUNCTION,
         // fn: `function (req){return req.url;}`, //支持函数字符串
         fn(req) {

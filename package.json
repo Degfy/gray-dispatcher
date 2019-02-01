@@ -8,7 +8,8 @@
     "dependencies": {
         "cookies": "^0.7.3",
         "http-proxy": "^1.17.0",
-        "is-type-of": "^1.2.1"
+        "is-type-of": "^1.2.1",
+        "abc-ip2region": "0.0.1"
     },
     "devDependencies": {}
 }

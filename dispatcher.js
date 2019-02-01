@@ -2,7 +2,8 @@ const HttpProxy = require('http-proxy');
 const is = require('is-type-of');
 const Cookies = require('cookies');
 const vm = require('vm');
-
+const ip2region = require('abc-ip2region').create();
+const IP = Symbol('context#ip');
 
 const DISPATCHERTYPE = {
     UUID_RAND: 'UUID_RAND',
@@ -15,12 +16,14 @@ function matchMachine(req, strategies) {
         UUID_RAND({ n, s, machine }) {
             const cookies = new Cookies(req);
             const uuid = cookies.get('uuid');
-            const m = parseInt(uuid.substr(-6), 16) % n;
-            if (is.number(s)) {
-                s = [s]
-            }
-            if (is.array(s) && s.some(o => o === m)) {
-                return machine;
+            if (is.string(uuid) && uuid.length > 6) {
+                const m = parseInt(uuid.substr(-6), 16) % n;
+                if (is.number(s)) {
+                    s = [s]
+                }
+                if (is.array(s) && s.some(o => o === m)) {
+                    return machine;
+                }
             }
         },
 
@@ -70,6 +73,20 @@ function matchMachine(req, strategies) {
                 }
             }
         },
+
+        REGION({ region, machine }) {
+            if (req.ip && region) {
+                if (is.string(region)) {
+                    region = [region];
+                }
+
+                const ip = req.ip.replace(/^::ffff:/, '');
+                const rst = ip2region.memorySearchSync(ip);
+                if (rst && rst.region.match(new RegExp(region.join('|')))) {
+                    return machine;
+                }
+            }
+        },
     };
     let machine
     strategies.some(strategy => {
@@ -82,7 +99,7 @@ function matchMachine(req, strategies) {
     return machine;
 }
 
-function Dispatcher(defaultMachine, getStrategy, isAsync = false) {
+function Dispatcher(defaultMachine, getStrategy, { isAsync = false, proxy = true } = { isAsync: true, proxy: true }) {
     const _map = new Map();
 
     function getMachineProxyServer(machine) {
@@ -92,7 +109,7 @@ function Dispatcher(defaultMachine, getStrategy, isAsync = false) {
             proxy = new HttpProxy.createProxyServer(machine);
             _map.set(key, proxy);
 
-            proxy.$web = function(req, res) {
+            proxy.$web = function(req, res, fn) {
                 let _resolve
                 const promise = new Promise(resolve => {
                     _resolve = resolve;
@@ -106,7 +123,7 @@ function Dispatcher(defaultMachine, getStrategy, isAsync = false) {
                 };
 
                 proxy.on('end', end);
-                proxy.web(req, res);
+                proxy.web(req, res, fn);
                 return promise;
             }
         }
@@ -114,19 +131,62 @@ function Dispatcher(defaultMachine, getStrategy, isAsync = false) {
         return proxy;
     }
 
+    function reqHelper(req) {
+        req.get = function(field) {
+            const req = this;
+            switch (field = field.toLowerCase()) {
+                case 'referer':
+                case 'referrer':
+                    return req.headers.referrer || req.headers.referer || '';
+                default:
+                    return req.headers[field] || '';
+            }
+        };
+
+        Object.defineProperty(req, 'ips', {
+            configurable: true,
+            enumerable: true,
+            get() {
+                const val = this.get('X-Forwarded-For');
+                return proxy && val ?
+                    val.split(/\s*,\s*/) : [];
+            },
+        });
+
+        Object.defineProperty(req, 'ip', {
+            configurable: true,
+            enumerable: true,
+            get() {
+                if (!this[IP]) {
+                    this[IP] = this.ips[0] || this.socket.remoteAddress || '';
+                }
+                return this[IP];
+            },
+        });
+    }
+
     function web(req, res) {
+        reqHelper(req);
         const strategies = getStrategy();
         const machine = matchMachine(req, strategies) || defaultMachine;
 
         const proxyServer = getMachineProxyServer(machine);
+
+        function errorHandle(err) {
+            console.error(err);
+            // todo
+            res.end('error in server');
+        }
+
         if (isAsync) {
-            return proxyServer.$web(req, res);
+            return proxyServer.$web(req, res, errorHandle);
         } else {
-            return proxyServer.web(req, res);
+            return proxyServer.web(req, res, errorHandle);
         }
     }
 
     function upgrade(req, socket, head) {
+        reqHelper(req);
         const strategies = getStrategy();
         const machine = matchMachine(req, strategies) || defaultMachine;
         const proxyServer = getMachineProxyServer(machine);
